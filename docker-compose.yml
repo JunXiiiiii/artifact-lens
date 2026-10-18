@@ -1,0 +1,94 @@
+# Artifact Lens — Production-Ready Stack
+# One command: docker compose up --build -d
+# Runs: Postgres + Hunyuan3D (GPU) + API + Frontend dev server
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: artifactlens
+      POSTGRES_USER: artifact
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-artifact_lens_secure}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U artifact -d artifactlens"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+
+  hunyuan:
+    build:
+      context: .
+      dockerfile: services/hunyuan/Dockerfile
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    environment:
+      HUNYUAN_MODEL_ID: ${HUNYUAN_MODEL_ID:-tencent/Hunyuan3D-2mini}
+    volumes:
+      - hfcache:/root/.cache/huggingface
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 300s
+    # GPU disabled by default - enable with: docker compose -f docker-compose.yml -f docker-compose.gpu.yml up
+    # deploy block only works with GPU runtime installed
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      hunyuan:
+        condition: service_started
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://artifact:${DB_PASSWORD:-artifact_lens_secure}@db:5432/artifactlens
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRY: ${JWT_EXPIRY:-7d}
+      OWNER_EMAIL: ${OWNER_EMAIL}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5vl:3b}
+      HUNYUAN_BASE_URL: http://hunyuan:8080
+      VIEWER_PORT: 8181
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./storage:/app/storage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      VITE_API_URL: http://localhost:3000
+    ports:
+      - "5173:5173"
+    # In production, nginx serves static files; dev uses Vite
+
+volumes:
+  pgdata:
+  hfcache:

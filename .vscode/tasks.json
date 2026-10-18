@@ -1,0 +1,116 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "docker-compose: up",
+      "type": "shell",
+      "command": "docker compose up --build -d",
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "Start all services (DB, Hunyuan, API) in background"
+    },
+    {
+      "label": "docker-compose: down",
+      "type": "shell",
+      "command": "docker compose down",
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "Stop and remove all containers"
+    },
+    {
+      "label": "docker-compose: logs",
+      "type": "shell",
+      "command": "docker compose logs -f",
+      "group": "test",
+      "problemMatcher": [],
+      "detail": "Follow logs from all services"
+    },
+    {
+      "label": "dev: full stack",
+      "type": "shell",
+      "command": "npm run dev",
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": [
+        {
+          "owner": "vite",
+          "fileLocation": "relative",
+          "pattern": "(.+):(\\d+):(\\d+): (error|warning): (.+)"
+        }
+      ],
+      "detail": "Start backend + frontend dev servers"
+    },
+    {
+      "label": "dev: api only",
+      "type": "shell",
+      "command": "npm run server",
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": [],
+      "detail": "Start only the backend API server"
+    },
+    {
+      "label": "dev: frontend only",
+      "type": "shell",
+      "command": "npm run client",
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": [
+        {
+          "owner": "vite",
+          "fileLocation": "relative",
+          "pattern": "(.+):(\\d+):(\\d+): (error|warning): (.+)"
+        }
+      ],
+      "detail": "Start only the Vite frontend dev server"
+    },
+    {
+      "label": "db:init",
+      "type": "shell",
+      "command": "npm run db:init",
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "Initialize database schema"
+    },
+    {
+      "label": "demo:prepare",
+      "type": "shell",
+      "command": "npm run demo:prepare",
+      "group": "test",
+      "problemMatcher": [],
+      "detail": "Verify backend, DB, Ollama, warm up model (run before demo)"
+    },
+    {
+      "label": "build: all",
+      "type": "shell",
+      "command": "npm run build",
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "Production build frontend"
+    },
+    {
+      "label": "lint",
+      "type": "shell",
+      "command": "npm run lint",
+      "group": "test",
+      "problemMatcher": ["eslint-compact"],
+      "detail": "Run ESLint on all source files"
+    },
+    {
+      "label": "test:unit",
+      "type": "shell",
+      "command": "npm run test",
+      "group": "test",
+      "problemMatcher": [],
+      "detail": "Run unit tests"
+    },
+    {
+      "label": "deploy: render",
+      "type": "shell",
+      "command": "git push origin main",
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "Trigger Render auto-deploy (configured via render.yaml)"
+    }
+  ]
+}

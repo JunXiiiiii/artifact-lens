@@ -1,0 +1,56 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug: Full Stack (Docker Compose)",
+      "type": "docker",
+      "request": "launch",
+      "platform": "node",
+      "dockerComposeFile": "${workspaceFolder}/docker-compose.yml",
+      "service": "api",
+      "preLaunchTask": "docker-compose: up"
+    },
+    {
+      "name": "Debug: API Server (Node)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/server/index.js",
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal",
+      "restart": true,
+      "runtimeExecutable": "node",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "Debug: Frontend (Vite)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/client/src",
+      "sourceMapPathOverrides": {
+        "webpack:///src/*": "${webRoot}/*"
+      }
+    },
+    {
+      "name": "Debug: Full Stack (API + Frontend)",
+      "type": "compound",
+      "configurations": ["Debug: API Server (Node)", "Debug: Frontend (Vite)"]
+    },
+    {
+      "name": "Debug: Unit Tests",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/node_modules/.bin/vitest",
+      "args": ["run"],
+      "cwd": "${workspaceFolder}/client",
+      "console": "integratedTerminal"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug: Full Stack + DB",
+      "configurations": ["Debug: Full Stack (Docker Compose)"]
+    }
+  ]
+}
