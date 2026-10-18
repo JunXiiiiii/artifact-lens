@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Artifact Lens — Archive Viewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --surface-base: #1A1712;
+  --surface-raised: #3A2E1E;
+  --surface-overlay: rgba(26, 23, 18, 0.85);
+  --accent-gold: #D9A441;
+  --accent-gold-dim: #A8742A;
+  --accent-coral: #D85C3E;
+  --accent-teal: #5FA69C;
+  --accent-teal-dim: #3D7A72;
+  --text-primary: #F1E9D8;
+  --text-secondary: #B8A98A;
+  --text-muted: #7A6E5E;
+  --terrain-moss: #5C7A52;
+  --terrain-stone: #8C8578;
+  --terrain-sand: #C9B389;
+  --terrain-water: #4E7A82;
+  --state-detected: #4CAF82;
+  --state-rejected: #C94040;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --radius-badge: 20px;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'Inter', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+}
+* { box-sizing: border-box; }
+body {
+  background-color: var(--surface-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  margin: 0; padding: 32px 16px 64px;
+  min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+}
+.wrap { width: 100%; max-width: 1100px; }
+.viewer-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.stamp { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.2em; color: var(--accent-gold); }
+.stamp-sub { font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.2em; color: var(--text-muted); }
+.viewer-title { font-family: var(--font-display); font-size: 1.25rem; color: var(--text-primary); margin: 8px 0 0; }
+.viewer-rule { border: none; border-top: 1px solid rgba(140,133,120,0.3); margin: 16px 0 20px; }
+.card { background: var(--surface-raised); border: 1px solid rgba(140,133,120,0.4); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 20px; }
+label { font-family: var(--font-body); font-weight: 500; font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 6px; }
+input, select {
+  background: transparent; color: var(--text-primary);
+  border: 1px solid var(--terrain-stone); border-radius: var(--radius-sm);
+  font-family: var(--font-body); font-size: 0.9rem; padding: 9px 12px; width: 100%;
+}
+select { background: var(--surface-raised); }
+input:focus, select:focus { outline: none; border-color: var(--accent-gold); box-shadow: 0 0 0 3px rgba(217,164,65,0.15); }
+button {
+  background: var(--accent-gold); color: var(--surface-base); border: none;
+  border-radius: var(--radius-md); font-family: var(--font-body); font-weight: 600;
+  font-size: 0.9rem; padding: 10px 16px; cursor: pointer;
+}
+button:hover { background: var(--accent-gold-dim); }
+button.ghost { background: transparent; color: var(--accent-teal); border: 1px solid var(--accent-teal); font-family: var(--font-mono); font-size: 0.7rem; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+.row > div { flex: 1 1 200px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th { font-family: var(--font-mono); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); text-align: left; padding: 10px 8px; border-bottom: 1px solid rgba(140,133,120,0.3); }
+td { padding: 12px 8px; border-bottom: 1px solid rgba(140,133,120,0.2); vertical-align: top; }
+tr.data { cursor: pointer; }
+tr.data:hover td { background: var(--surface-raised); }
+td.acct { font-family: var(--font-mono); font-size: 0.7rem; color: var(--terrain-sand); }
+td img.thumb { width: 120px; max-width: 120px; border-radius: var(--radius-md); border: 1px solid var(--terrain-stone); display: block; }
+td .nm { font-weight: 500; color: var(--text-primary); }
+.meta { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); }
+.badge { display: inline-block; font-family: var(--font-mono); font-size: 0.65rem; padding: 3px 10px; border-radius: var(--radius-badge); white-space: nowrap; }
+.badge.ok { background: var(--state-detected); color: var(--surface-base); }
+.badge.bad { background: var(--state-rejected); color: var(--text-primary); }
+.badge.neu { background: var(--terrain-stone); color: var(--surface-base); }
+.badge.teal { background: var(--accent-teal); color: var(--surface-base); }
+.detail td { background: rgba(0,0,0,.25); }
+.detail .grid { display: grid; grid-template-columns: 140px 1fr; gap: 6px 12px; font-size: 0.85rem; }
+.detail .k { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+a { color: var(--accent-teal); }
+.error { color: var(--state-rejected); font-size: 0.85rem; margin-top: 10px; }
+footer { margin-top: 24px; font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); text-align: right; }
+.accounts { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.acct-card { border: 1px solid rgba(140,133,120,0.4); border-radius: var(--radius-md); padding: 12px; }
+.acct-card .email { font-weight: 500; font-size: 0.9rem; word-break: break-all; color: var(--text-primary); }
+:focus-visible { box-shadow: 0 0 0 3px rgba(217,164,65,0.3); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="viewer-head"><span class="stamp">Artifact Lens</span><span class="stamp-sub">Archive Viewer</span></div>
+    <h2 class="viewer-title">Field Archive</h2>
+  </header>
+  <hr class="viewer-rule" />
+
+  <div class="card" id="authCard">
+    <div class="row">
+      <div style="flex: 3 1 320px">
+        <label for="token">JWT (paste from the main app)</label>
+        <input id="token" type="password" placeholder="eyJhbGciOi..." autocomplete="off" />
+      </div>
+      <div><button id="loadBtn">Load archive</button></div>
+    </div>
+    <div class="error" id="authErr"></div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label for="fAccount">Filter by account</label>
+        <select id="fAccount"><option value="">All accounts</option></select>
+      </div>
+      <div>
+        <label for="fStatus">Filter by confirmation</label>
+        <select id="fStatus">
+          <option value="">All statuses</option>
+          <option>Unconfirmed</option>
+          <option>Confirmed correct</option>
+          <option>Marked wrong</option>
+        </select>
+      </div>
+      <div><button class="ghost" id="reloadBtn">Reload</button></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <table>
+      <thead>
+        <tr><th>Account</th><th>Identification</th><th>Age estimate</th><th>Confirmation</th><th>Timestamp</th><th>Image</th></tr>
+      </thead>
+      <tbody id="rows"><tr><td colspan="6" class="meta">No data loaded yet.</td></tr></tbody>
+    </table>
+    <div class="error" id="dataErr"></div>
+  </div>
+
+  <div class="card">
+    <h2 class="viewer-title">Accounts</h2>
+    <div class="accounts" id="accounts" style="margin-top:12px"><span class="meta">No data loaded yet.</span></div>
+  </div>
+
+  <footer>localhost:8181</footer>
+</div>
+
+<script>
+(function () {
+  var BASE = '';
+  var scans = [];
+  var tokenInput = document.getElementById('token');
+  var authErr = document.getElementById('authErr');
+  var dataErr = document.getElementById('dataErr');
+
+  var m = location.search.match(/[?&]token=([^&]+)/);
+  if (m) {
+    try { tokenInput.value = decodeURIComponent(m[1]); } catch (e) { tokenInput.value = m[1]; }
+    load();
+  }
+
+  function token() { return tokenInput.value.trim(); }
+  function headers() { return { Authorization: 'Bearer ' + token() }; }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function badge(status) {
+    if (status === 'Confirmed correct') return '<span class="badge ok">Confirmed correct</span>';
+    if (status === 'Marked wrong') return '<span class="badge bad">Marked wrong</span>';
+    return '<span class="badge neu">Unconfirmed</span>';
+  }
+
+  function render() {
+    var fa = document.getElementById('fAccount').value;
+    var fs = document.getElementById('fStatus').value;
+    var tb = document.getElementById('rows');
+    var list = scans.filter(function (s) {
+      if (fa && s.accountId !== fa) return false;
+      if (fs && s.confirmationStatus !== fs) return false;
+      return true;
+    });
+    if (!list.length) {
+      tb.innerHTML = '<tr><td colspan="6" class="meta">No scans match this filter.</td></tr>';
+      return;
+    }
+    tb.innerHTML = list.map(function (s, i) {
+      var when = s.timestamp ? new Date(s.timestamp).toLocaleString() : '';
+      return (
+        '<tr class="data" data-i="' + i + '">' +
+        '<td class="acct">' + esc(s.accountEmail || s.accountDisplayName || s.accountId || '') + '</td>' +
+        '<td><span class="nm">' + esc(s.identification || 'Untitled') + '</span>' +
+        (s.modelAvailable ? ' <span class="badge teal">3D</span>' : '') + '</td>' +
+        '<td class="meta">' + esc(s.ageEstimate || '') + '</td>' +
+        '<td>' + badge(s.confirmationStatus) + '</td>' +
+        '<td class="meta">' + esc(when) + '</td>' +
+        '<td>' + (s.imageData ? '<img class="thumb" src="' + esc(s.imageData) + '" alt="Captured artifact" />' : '<span class="meta">' + esc(s.cameraSource || '') + '</span>') + '</td>' +
+        '</tr>'
+      );
+    }).join('');
+    Array.prototype.forEach.call(tb.querySelectorAll('tr.data'), function (tr) {
+      tr.addEventListener('click', function () {
+        var s = list[Number(tr.getAttribute('data-i'))];
+        var open = tr.nextSibling && tr.nextSibling.classList && tr.nextSibling.classList.contains('detail');
+        if (open) { tr.parentNode.removeChild(tr.nextSibling); return; }
+        var detail = document.createElement('tr');
+        detail.className = 'detail';
+        detail.innerHTML =
+          '<td colspan="6"><div class="grid">' +
+          '<span class="k">Condition</span><span><span class="badge teal">' + esc(s.condition || '') + '</span> ' + esc(s.conditionRationale || '') + '</span>' +
+          '<span class="k">Origin</span><span>' + esc(s.origin || '') + ' <span class="meta">(' + esc(s.originConfidence || '') + ')</span></span>' +
+          '<span class="k">Era / Culture</span><span>' + esc(s.eraCulture || '') + '</span>' +
+          '<span class="k">Summary</span><span>' + esc(s.summary || '') + '</span>' +
+          '<span class="k">Match</span><span>' + esc(s.matchName || '') +
+          (s.matchSourceUrl ? ' &middot; <a href="' + esc(s.matchSourceUrl) + '" target="_blank" rel="noreferrer">source</a>' : '') + '</span>' +
+          '<span class="k">Object read</span><span class="meta">' + esc(s.step1ObjectRead || '') + '</span>' +
+          (s.fieldNotes ? '<span class="k">Notes</span><span>' + esc(s.fieldNotes) + '</span>' : '') +
+          '<span class="k">Camera</span><span class="meta">' + esc(s.cameraSource || '') + '</span>' +
+          '</div></td>';
+        tr.parentNode.insertBefore(detail, tr.nextSibling);
+      });
+    });
+  }
+
+  function renderAccounts(accounts) {
+    var box = document.getElementById('accounts');
+    var sel = document.getElementById('fAccount');
+    if (!accounts.length) { box.innerHTML = '<span class="meta">No accounts.</span>'; return; }
+    box.innerHTML = accounts.map(function (a) {
+      return '<div class="acct-card"><div class="email">' + esc(a.email) + '</div>' +
+        '<div class="meta">' + esc(a.displayName || '') + ' &middot; ' + esc(a.role) + '</div>' +
+        '<div class="meta">' + a.scanCount + ' scans</div></div>';
+    }).join('');
+    var cur = sel.value;
+    sel.innerHTML = '<option value="">All accounts</option>' + accounts.map(function (a) {
+      return '<option value="' + esc(a.id) + '">' + esc(a.email) + '</option>';
+    }).join('');
+    sel.value = cur;
+  }
+
+  async function load() {
+    authErr.textContent = '';
+    dataErr.textContent = '';
+    if (!token()) { authErr.textContent = 'Paste your JWT first (copy it from the main app).'; return; }
+    try {
+      var r1 = await fetch(BASE + '/api/scans', { headers: headers() });
+      if (r1.status === 401) { authErr.textContent = 'Session expired. Please log in again.'; return; }
+      if (r1.status === 403) { dataErr.textContent = 'Access denied.'; return; }
+      if (!r1.ok) throw new Error('Failed to load scans.');
+      scans = await r1.json();
+      render();
+    } catch (e) { dataErr.textContent = e.message || 'Could not reach localhost:8181.'; return; }
+    try {
+      var r2 = await fetch(BASE + '/api/accounts', { headers: headers() });
+      if (r2.ok) renderAccounts(await r2.json());
+    } catch (e) { /* accounts section is supplementary */ }
+  }
+
+  document.getElementById('loadBtn').addEventListener('click', load);
+  document.getElementById('reloadBtn').addEventListener('click', load);
+  document.getElementById('fAccount').addEventListener('change', render);
+  document.getElementById('fStatus').addEventListener('change', render);
+})();
+</script>
+</body>
+</html>

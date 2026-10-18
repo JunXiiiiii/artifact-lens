@@ -1,0 +1,74 @@
+# Render Blueprint - Artifact Lens
+# Deploy: Connect repo to Render, select "Blueprint", point to this file
+# Auto-provisions: PostgreSQL, Web Service (API), Static Site (Frontend)
+
+services:
+  # PostgreSQL Database (Managed)
+  - type: pserv
+    name: artifactlens-db
+    plan: free
+    region: oregon
+    postgresMajorVersion: 16
+    databaseName: artifactlens
+    user: artifact
+
+  # API Web Service (Docker)
+  - type: web
+    name: artifactlens-api
+    plan: starter
+    region: oregon
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: artifactlens-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRY
+        value: "7d"
+      - key: OWNER_EMAIL
+        sync: false
+      - key: OLLAMA_BASE_URL
+        value: "https://api.together.xyz/v1"
+      - key: OLLAMA_MODEL
+        value: "meta-llama/Llama-3.2-11B-Vision-Instruct-Turbo"
+      - key: HUNYUAN_BASE_URL
+        value: "https://hunyuan.artifactlens.internal"
+    healthCheckPath: /health
+    autoDeploy: true
+
+  # Frontend Static Site (Vercel recommended, but Render Static works too)
+  - type: static
+    name: artifactlens-frontend
+    plan: free
+    region: oregon
+    buildCommand: npm run build
+    outputDirectory: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://artifactlens-api.onrender.com
+    pullRequestPreviewsEnabled: true
+
+  # Optional: Hunyuan3D GPU Service (separate GPU instance)
+  # Deploy separately on Modal/RunPod/Modal, then add URL to HUNYUAN_BASE_URL
+  # - type: web
+  #   name: artifactlens-hunyuan
+  #   plan: standard
+  #   runtime: docker
+  #   dockerfilePath: services/hunyuan/Dockerfile
+  #   dockerContext: .
+  #   envVars:
+  #     - key: HUNYUAN_MODEL_ID
+  #       value: "tencent/Hunyuan3D-2mini"
+
+databases:
+  - name: artifactlens-db
+    plan: free
+    region: oregon
