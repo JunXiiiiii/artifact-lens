@@ -62,7 +62,7 @@ async function start() {
     console.error('[server] Database init failed:', err.message);
     console.error('[server] The API will still start, but DB features will report offline.');
   }
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`[server] Artifact Lens API listening on http://localhost:${PORT}`);
   });
 }
