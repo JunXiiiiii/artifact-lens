@@ -20,7 +20,7 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '15mb' }));
 
-app.get('/health', (req, res) => res.json({ ok: true, service: 'artifact-lens' }));
+app.get('/health', (req, res) => { console.log('Health check hit'); res.json({ ok: true, service: 'artifact-lens' }); });
 
 app.use('/api/auth', authRoutes);
 app.use('/api/scans', scanRoutes);
